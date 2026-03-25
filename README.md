@@ -1,49 +1,34 @@
-# Adaptive Multi-Defect Identification via Inverse PINNs
+# Quantum Neural Eigensolver (Quantum PINN)
 
 ## 📌 Overview
-This repository contains a PyTorch-based computational mechanics framework designed to solve complex inverse problems in solid mechanics. Specifically, it employs an **Inverse Physics-Informed Neural Network (PINN)** to autonomously detect, localize, and quantify multiple hidden defects (e.g., micro-voids, material degradation, structural damage) within a continuous material domain by analyzing its spatial deformation field.
+This repository implements an unsupervised Physics-Informed Neural Network (PINN) to solve the time-independent Schrödinger equation. By treating the energy eigenvalue ($E$) as a learnable parameter alongside the network weights, this Quantum PINN autonomously discovers both the ground-state wavefunction ($\psi$) and the ground-state energy of a 1D Quantum Harmonic Oscillator, entirely without labeled data.
 
-This approach bridges deep learning and non-destructive evaluation (NDE), offering a purely mesh-free, data-driven alternative to traditional iterative finite element updating methods.
+## 🔬 Scientific Context & Materials Informatics Application
+In computational materials science, determining the electronic structure of a material requires solving complex eigenvalue problems. Traditional Density Functional Theory (DFT) solvers, such as **VASP**, rely on iterative numerical matrix diagonalizations over discretized grids or plane-wave basis sets. 
 
-## 🔬 Scientific Context & Materials Engineering Application
-In structural health monitoring and materials characterization, internal damage often cannot be directly observed. Instead, engineers must infer the location and severity of defects from measurable surface displacements or strain fields. 
-
-Traditional inverse solvers rely on computationally expensive gradient-based optimization over heavy Finite Element Method (FEM) meshes. This project utilizes a deep learning surrogate to invert the governing physical equations. The network takes the observable physical state (deformation) as an input and outputs the underlying spatial parameter field (damage distribution).
+This project explores a fundamentally different, mesh-free paradigm. By using a continuous neural network ansatz to parameterize the wavefunction, we bypass grid-resolution limits. The network uses automatic differentiation to compute exact kinetic energy operators, making it a highly scalable approach that serves as a foundational step toward deep learning-based many-body quantum solvers.
 
 ## 🧠 Methodology & Model Architecture
-The primary implementation is located in: `Adaptive_Multi_Defect_Identification_(Inverse_PINN) (1).ipynb`
+The implementation is contained in `Quantum_Neural_Eigensolver_(Quantum_PINN) (1).ipynb` and consists of two main components:
 
-The inverse PINN pipeline is structured as follows:
-1.  **Synthetic Data Generation (Forward Proxy):** * Simulates a continuous material domain containing a highly parameterized topology of defects (varying in $(x, y)$ coordinates, radius $r$, and severity $val$).
-    * Generates the synthetic surface deformation mapping resulting from these internal weak spots.
-2.  **Inverse Physics-Informed Architecture:**
-    * A dense Multilayer Perceptron (MLP) built in PyTorch.
-    * **Inputs:** Spatial coordinates $(x, y)$ and the corresponding measured deformation/displacement.
-    * **Outputs:** The predicted spatial damage parameter (e.g., reduction in localized stiffness).
-3.  **Loss Formulation:**
-    * Minimizes the discrepancy between the measured deformation and the PINN's parameterized structural predictions.
-    * Utilizes adaptive weighting to handle the multi-scale nature of simultaneous minor and severe defects.
+1. **The Wavefunction Network (Ansatz):**
+   * A Multilayer Perceptron (MLP) maps the continuous spatial coordinate $x$ to the probability amplitude $\psi(x)$.
+   * **Physical Boundary Conditions:** The raw network output is multiplied by a Gaussian envelope ($e^{-x^2}$) to strictly enforce that the wavefunction decays to zero at infinity, massively accelerating training convergence.
+   * **Learnable Eigenvalue:** The scalar energy value $E$ is optimized concurrently as an `nn.Parameter`.
+
+2. **The Physics Loss (Hamiltonian Residual):**
+   * **Kinetic Energy:** Computed exactly via double automatic differentiation ($\nabla^2 \psi$).
+   * **Potential Energy:** Evaluated using the harmonic oscillator potential ($V(x) = \frac{1}{2}x^2$).
+   * **Residual:** Minimizes the variance of the Schrödinger equation $( \hat{H}\psi - E\psi )^2$.
+   * **Normalization:** A Monte Carlo integration penalty is added to enforce $\langle\psi|\psi\rangle = 1$, preventing the network from collapsing to the trivial solution ($\psi = 0$).
 
 ## 💻 Tech Stack
-* **Deep Learning Framework:** PyTorch
-* **Mathematics & Matrix Operations:** NumPy
-* **Visualization (Contour & Field Plots):** Matplotlib
-* **Paradigm:** Mesh-free Inverse Modeling, Physics-Informed Machine Learning
+* **Deep Learning & Autograd:** PyTorch
+* **Data Manipulation:** NumPy
+* **Visualization:** Matplotlib
 
 ## 🚀 How to Run
-1.  Ensure your environment has Python 3.8+ installed with `torch`, `numpy`, and `matplotlib`.
-2.  Open the Jupyter Notebook:
-    ```bash
-    jupyter notebook "Adaptive_Multi_Defect_Identification_(Inverse_PINN) (1).ipynb"
-    ```
-3.  Execute the cells sequentially to:
-    * Initialize the multi-defect array (e.g., center weak spot, off-axis severe damage).
-    * Generate the synthetic deformation tensor.
-    * Train the inverse neural network to back-calculate the defect locations.
-    * Visualize the predicted damage field versus the exact synthetic ground truth.
-
-## 📊 Evaluation Metrics
-The accuracy of the inverse solver is quantified using:
-* **Defect Localization Error:** The spatial offset between the predicted and actual defect centroids.
-* **Severity Quantification:** The error in predicted localized stiffness reduction.
-* **Global $L_2$ Norm:** The overall topological reconstruction accuracy across the continuous 2D domain.
+1. Ensure you have Python installed with `torch`, `numpy`, and `matplotlib`.
+2. Launch the Jupyter Notebook:
+   ```bash
+   jupyter notebook "Quantum_Neural_Eigensolver_(Quantum_PINN) (1).ipynb"
